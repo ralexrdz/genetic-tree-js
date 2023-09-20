@@ -236,8 +236,6 @@ const placeParents = (node, siblings, row, mother, father, family ,s) => {
     if ((mother && !father)) {
       mother.x = center - 100
       mother.y = recty
-      // s.rect(center - 100, recty, 200, 100)
-      // s.text(center - 90, recty + 30, mother.name).attr({fill: 'white'})
 
       buildNode(s, mother, center - 100, recty, 200, 100)
 
@@ -247,8 +245,6 @@ const placeParents = (node, siblings, row, mother, father, family ,s) => {
     else if ((father && !mother)) {
       father.x = center - 100
       father.y = recty
-      // s.rect(center - 100, recty, 200, 100)
-      // s.text(center - 90, recty + 30, father.name).attr({fill: 'white'})
 
       buildNode(s, father, center - 100, recty, 200, 100)
 
@@ -263,8 +259,6 @@ const placeParents = (node, siblings, row, mother, father, family ,s) => {
       }
       mother.x = left
       mother.y = recty
-      // s.rect( left, recty , 200, 100)
-      // s.text( left + 10, recty + 30, mother.name).attr({fill: 'white'})
 
       buildNode(s, father, left, recty , 200, 100)
       
@@ -273,8 +267,6 @@ const placeParents = (node, siblings, row, mother, father, family ,s) => {
 
       father.x = right-200
       father.y = recty
-      // s.rect( right-200, recty , 200, 100)
-      // s.text( right-190, recty + 30, father.name).attr({fill: 'white'})
 
       buildNode(s, father, right-200, recty , 200, 100)
     }
