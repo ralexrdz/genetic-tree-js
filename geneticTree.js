@@ -13,6 +13,45 @@ const init = (family) => {
   
 }
 
+const confing = {
+  nodeWidth: 200,
+  nodeHeight: 100,
+}
+
+const buildNode = (s, n, x, y, w, h) => {
+  let group = s.group()
+
+  let foreignObject = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject')
+  foreignObject.setAttribute('width', w)
+  foreignObject.setAttribute('height', h)
+  foreignObject.setAttribute('x', x)
+  foreignObject.setAttribute('y', y)
+      
+  foreignObject.innerHTML = `
+    <div class="node">
+      <div class="node_header">
+        <button class="node_button">
+          <img class="node_buttonIcon">
+        </button>
+        <button class="node_button">
+          <img class="node_buttonIcon">
+        </button>
+      </div>
+      <div class="node_content">
+        <div class="node_userpic">
+          <img class="node_userpicFile">
+        </div>
+        <div class="node_titles">
+          <p class="title">${n.name}</p>
+          <p class="subtitle"></p>
+        </div>
+      </div>
+    </div>
+  `
+
+  group.append(foreignObject)
+
+}
 
 const getChildren = (personIdArrm, family) => {
   // gets All the children of an a array of persons ids
@@ -146,8 +185,9 @@ const placeNodes = (nodesByGen, family, s) => {
     let recty = (row * 100) + (40 * row)
     n.x = rectx
     n.y = recty
-    s.rect( rectx, recty , 200, 100)
-    s.text( rectx + 10, recty + 30, n.name).attr({fill: 'white'})
+    
+    buildNode(s, n, rectx, recty, 200, 100)
+
     if (n.motherId || n.fatherId) {
       // line for each child
       s.path(`M${rectx+100},${recty+100}L${rectx+100},${recty+120}`).attr({stroke: 'black', strokeWidth: '4'})
@@ -196,8 +236,8 @@ const placeParents = (node, siblings, row, mother, father, family ,s) => {
     if ((mother && !father)) {
       mother.x = center - 100
       mother.y = recty
-      s.rect(center - 100, recty, 200, 100)
-      s.text(center - 90, recty + 30, mother.name).attr({fill: 'white'})
+
+      buildNode(s, mother, center - 100, recty, 200, 100)
 
       // line joining
       s.path(`M${center},${recty}L${center},${recty-40}`).attr({stroke: 'black', strokeWidth: '4'})
@@ -205,8 +245,8 @@ const placeParents = (node, siblings, row, mother, father, family ,s) => {
     else if ((father && !mother)) {
       father.x = center - 100
       father.y = recty
-      s.rect(center - 100, recty, 200, 100)
-      s.text(center - 90, recty + 30, father.name).attr({fill: 'white'})
+
+      buildNode(s, father, center - 100, recty, 200, 100)
 
       // line joining
       s.path(`M${center},${recty}L${center},${recty-40}`).attr({stroke: 'black', strokeWidth: '4'})
@@ -219,16 +259,16 @@ const placeParents = (node, siblings, row, mother, father, family ,s) => {
       }
       mother.x = left
       mother.y = recty
-      s.rect( left, recty , 200, 100)
-      s.text( left + 10, recty + 30, mother.name).attr({fill: 'white'})
+
+      buildNode(s, father, left, recty , 200, 100)
       
       // line joining parents
       s.path(`M${left+200},${recty+50}L${right},${recty+50}`).attr({stroke: 'black', strokeWidth: '4'})
 
       father.x = right-200
       father.y = recty
-      s.rect( right-200, recty , 200, 100)
-      s.text( right-190, recty + 30, father.name).attr({fill: 'white'})
+
+      buildNode(s, father, right-200, recty , 200, 100)
     }
 
     if (mother) {
@@ -259,8 +299,10 @@ const placeChildren = (children, row, x, y, s) => {
     let rectx = x + (chi * 200) + (30 * chi)
     ch.x = rectx
     ch.y = recty
-    s.rect( rectx, recty , 200, 100)
-    s.text( rectx + 10, recty + 30, ch.name).attr({fill: 'white'})
+    // s.rect( rectx, recty , 200, 100)
+    // s.text( rectx + 10, recty + 30, ch.name).attr({fill: 'white'})
+
+    buildNode(s, ch, rectx, recty , 200, 100)
 
     // line for each child
     s.path(`M${rectx+100},${recty+100}L${rectx+100},${recty+120}`).attr({stroke: 'black', strokeWidth: '4'})
