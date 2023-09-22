@@ -12,6 +12,10 @@ const init = (family) => {
   placeNodes(nodesByGen, family, s);
 };
 
+const buildLine = (s, f) => {
+  s.path(f).attr({stroke: config.strokeColor, strokeWidth: config.strokeWidth}).addClass(config.className);
+}
+
 const buildNode = (s, n, x, y, w, h) => {
   let group = s.group()
 
@@ -53,7 +57,8 @@ const config = {
   nodeXSpace: 40,
   nodeYSpace: 40,
   strokeWidth: 2,
-  strokeColor: "#8796D0"
+  strokeColor: "#8796D0",
+  className: "node",
 };
 
 const getChildren = (personIdArrm, family) => {
@@ -199,11 +204,11 @@ const placeNodes = (nodesByGen, family, s) => {
 
     if (n.motherId || n.fatherId) {
       // line for each child
-      s.path(
+      buildLine(s, 
         `M${rectx + config.nodeXSize / 2},${recty + config.nodeYSize}L${
           rectx + config.nodeXSize / 2
         },${recty + config.nodeYSize + config.nodeYSpace / 2 + config.strokeWidth / 2}`
-      ).attr({ stroke: config.strokeColor, strokeWidth: config.strokeWidth });
+      );
     }
 
     let children = nodesByGen[n.gen + 1]
@@ -256,16 +261,16 @@ const placeParents = (node, siblings, row, mother, father, family, s) => {
     let recty = node.y + row * config.nodeYSize + row * config.nodeYSpace;
 
     // lines joining siblings
-    s.path(
+    buildLine(s,
       `M${left + config.nodeXSize / 2 - config.strokeWidth / 2},${recty - config.nodeYSpace / 2}L${
         right - config.nodeXSize / 2 + config.strokeWidth / 2
       },${recty - config.nodeYSpace / 2}`
-    ).attr({ stroke: config.strokeColor, strokeWidth: config.strokeWidth });
-    s.path(
+    );
+    buildLine(s, 
       `M${center},${recty - config.nodeYSpace / 2 - config.strokeWidth / 2}L${center},${
         recty + config.nodeYSize / 2 + config.strokeWidth / 2
       }`
-    ).attr({ stroke: config.strokeColor, strokeWidth: config.strokeWidth });
+    );
 
     if (mother && !father) {
       mother.x = center - config.nodeXSize / 2;
@@ -278,9 +283,7 @@ const placeParents = (node, siblings, row, mother, father, family, s) => {
       );
 
       // line joining
-      s.path(`M${center},${recty}L${center},${recty - config.nodeYSpace}`).attr(
-        { stroke: config.strokeColor, strokeWidth: config.strokeWidth }
-      );
+      buildLine(s, `M${center},${recty}L${center},${recty - config.nodeYSpace}`);
     } else if (father && !mother) {
       father.x = center - config.nodeXSize / 2;
       father.y = recty;
@@ -292,9 +295,7 @@ const placeParents = (node, siblings, row, mother, father, family, s) => {
       );
 
       // line joining
-      s.path(`M${center},${recty}L${center},${recty - config.nodeYSpace}`).attr(
-        { stroke: config.strokeColor, strokeWidth: config.strokeWidth }
-      );
+      buildLine(s, `M${center},${recty}L${center},${recty - config.nodeYSpace}`);
     } else {
       if (right - left > config.nodeXSize * 2 + config.nodeXSpace) {
         left = center - (config.nodeXSize + config.nodeXSpace / 2);
@@ -306,11 +307,11 @@ const placeParents = (node, siblings, row, mother, father, family, s) => {
       buildNode(s, mother, left, recty, config.nodeXSize, config.nodeYSize);
 
       // line joining parents
-      s.path(
+      buildLine(s,
         `M${left + config.nodeXSize},${recty + config.nodeYSize / 2}L${right - config.nodeXSize},${
           recty + config.nodeYSize / 2
         }`
-      ).attr({ stroke: config.strokeColor, strokeWidth: config.strokeWidth });
+      );
 
       father.x = right - config.nodeXSize;
       father.y = recty;
@@ -363,11 +364,11 @@ const placeChildren = (children, row, x, y, s) => {
     buildNode(s, ch, rectx, recty, config.nodeXSize, config.nodeYSize);
 
     // line for each child
-    s.path(
+    buildLine(s, 
       `M${rectx + config.nodeXSize / 2},${recty + config.nodeYSize}L${
         rectx + config.nodeXSize / 2
       },${recty + config.nodeYSize + config.nodeYSpace / 2 + config.strokeWidth / 2}`
-    ).attr({ stroke: config.strokeColor, strokeWidth: config.strokeWidth });
+    )
 
     left = Math.min(left, rectx);
     right = Math.max(right, rectx + config.nodeXSize);
@@ -376,28 +377,28 @@ const placeChildren = (children, row, x, y, s) => {
   let center = (right + left) / 2;
 
   // lines joining parents
-  s.path(
+  buildLine(s,
     `M${center},${recty + config.nodeYSize + config.nodeYSpace / 2}L${center},${
       recty + config.nodeYSize + config.nodeYSpace + config.nodeYSize / 2
     }`
-  ).attr({ stroke: config.strokeColor, strokeWidth: config.strokeWidth });
+  );
 
-  s.path(
+  buildLine(s, 
     `M${center - config.nodeXSpace / 2},${
       recty + config.nodeYSize + config.nodeYSpace + config.nodeYSize / 2
     }L${center + config.nodeYSpace / 2},${
       recty + config.nodeYSize + config.nodeYSpace + config.nodeYSize / 2
     }`
-  ).attr({ stroke: config.strokeColor, strokeWidth: config.strokeWidth });
+  );
 
   // line joining siblings
-  s.path(
+  buildLine(s, 
     `M${left + config.nodeXSize / 2 - config.strokeWidth / 2},${
       recty + config.nodeYSize + config.nodeYSpace / 2
     }L${right - config.nodeXSize / 2 + config.strokeWidth / 2},${
       recty + config.nodeYSize + config.nodeYSpace / 2
     }`
-  ).attr({ stroke: config.strokeColor, strokeWidth: config.strokeWidth });
+  );
 };
 
 const sortGeneration = (nodes) => {
