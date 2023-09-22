@@ -1,22 +1,22 @@
-const init = (family) => {
+const init = (family, cb, config) => {
   addGenerations(family);
 
   // var s = Raphael(10, 50, 1000, 600);
-  var s = Snap("#tree");
+  var s = Snap(config.placeholder);
   setTimeout(() => {
-    svgPanZoom("#tree");
+    svgPanZoom(config.placeholder);
   }, 2500);
 
   nodesByGen = getNodesByGeneration(family);
-
-  placeNodes(nodesByGen, family, s);
+  placeNodes(nodesByGen, family, s, cb, config);
 };
 
-const buildLine = (s, f) => {
-  s.path(f).attr({stroke: config.strokeColor, strokeWidth: config.strokeWidth}).addClass(config.className);
+const buildLine = (s, f, config) => {
+  s.path(f).attr({stroke: config.strokeColor, strokeWidth: config.strokeWidth}).addClass(config.lineClassName);
 }
 
-const buildNode = (s, n, x, y, w, h) => {
+const buildNode = (s, n, x, y, w, h, cb) => {
+  cb(n)
   let group = s.group()
 
   let foreignObject = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject')
@@ -25,41 +25,11 @@ const buildNode = (s, n, x, y, w, h) => {
   foreignObject.setAttribute('x', x)
   foreignObject.setAttribute('y', y)
       
-  foreignObject.innerHTML = `
-    <div class="node">
-      <div class="node_header">
-        <button class="node_button">
-          <img class="node_buttonIcon">
-        </button>
-        <button class="node_button">
-          <img class="node_buttonIcon">
-        </button>
-      </div>
-      <div class="node_content">
-        <div class="node_userpic">
-          <img class="node_userpicFile">
-        </div>
-        <div class="node_titles">
-          <p class="title">${n.name}</p>
-          <p class="subtitle"></p>
-        </div>
-      </div>
-    </div>
-  `
+  foreignObject.innerHTML = cb(n);
 
   group.append(foreignObject)
 
 }
-
-const config = {
-  nodeXSize: 330,
-  nodeYSize: 130,
-  nodeXSpace: 40,
-  nodeYSpace: 40,
-  strokeWidth: 2,
-  strokeColor: "#8796D0",
-  className: "node",
-};
 
 const getChildren = (personIdArrm, family) => {
   // gets All the children of an a array of persons ids
@@ -180,7 +150,7 @@ const getNodesByGeneration = (family) => {
   return nodesByGen;
 };
 
-const placeNodes = (nodesByGen, family, s) => {
+const placeNodes = (nodesByGen, family, s, cb, config) => {
   let longestGeneration = Object.keys(nodesByGen).reduce((longest, gen) => {
     if (!longest) return nodesByGen[gen];
     else {
@@ -200,14 +170,14 @@ const placeNodes = (nodesByGen, family, s) => {
     n.x = rectx;
     n.y = recty;
     
-    buildNode(s, n, rectx, recty, config.nodeXSize, config.nodeYSize);
+    buildNode(s, n, rectx, recty, config.nodeXSize, config.nodeYSize, cb, config);
 
     if (n.motherId || n.fatherId) {
       // line for each child
       buildLine(s, 
         `M${rectx + config.nodeXSize / 2},${recty + config.nodeYSize}L${
           rectx + config.nodeXSize / 2
-        },${recty + config.nodeYSize + config.nodeYSpace / 2 + config.strokeWidth / 2}`
+        },${recty + config.nodeYSize + config.nodeYSpace / 2 + config.strokeWidth / 2}`, config
       );
     }
 
@@ -223,7 +193,7 @@ const placeNodes = (nodesByGen, family, s) => {
         (config.nodeXSize + config.nodeXSpace) -
         (children.length * (config.nodeXSize + config.nodeXSpace)) / 2;
       let childreny = n.y - (config.nodeYSize + config.nodeYSpace);
-      placeChildren(children, row - 2, childrenx, childreny, s);
+      placeChildren(children, row - 2, childrenx, childreny, s, cb, config);
     }
 
     let father, mother;
@@ -236,14 +206,14 @@ const placeNodes = (nodesByGen, family, s) => {
       let siblings = nodesByGen[n.gen].nodes.filter((s) =>
         n.siblings.includes(s.id)
       );
-      placeParents(n, siblings, row - 1, mother, father, family, s);
+      placeParents(n, siblings, row - 1, mother, father, family, s, cb, config);
     }
   });
 
   // })
 };
 
-const placeParents = (node, siblings, row, mother, father, family, s) => {
+const placeParents = (node, siblings, row, mother, father, family, s, cb, config) => {
   let left = siblings.length
     ? siblings.reduce((min, s) => {
         return Math.min(min, s.x, node.x);
@@ -264,12 +234,12 @@ const placeParents = (node, siblings, row, mother, father, family, s) => {
     buildLine(s,
       `M${left + config.nodeXSize / 2 - config.strokeWidth / 2},${recty - config.nodeYSpace / 2}L${
         right - config.nodeXSize / 2 + config.strokeWidth / 2
-      },${recty - config.nodeYSpace / 2}`
+      },${recty - config.nodeYSpace / 2}`, config
     );
     buildLine(s, 
       `M${center},${recty - config.nodeYSpace / 2 - config.strokeWidth / 2}L${center},${
         recty + config.nodeYSize / 2 + config.strokeWidth / 2
-      }`
+      }`, config
     );
 
     if (mother && !father) {
@@ -279,11 +249,11 @@ const placeParents = (node, siblings, row, mother, father, family, s) => {
         center - config.nodeXSize / 2,
         recty,
         config.nodeXSize,
-        config.nodeYSize
+        config.nodeYSize, cb
       );
 
       // line joining
-      buildLine(s, `M${center},${recty}L${center},${recty - config.nodeYSpace}`);
+      buildLine(s, `M${center},${recty}L${center},${recty - config.nodeYSpace}`, config);
     } else if (father && !mother) {
       father.x = center - config.nodeXSize / 2;
       father.y = recty;
@@ -291,11 +261,11 @@ const placeParents = (node, siblings, row, mother, father, family, s) => {
         center - config.nodeXSize / 2,
         recty,
         config.nodeXSize,
-        config.nodeYSize
+        config.nodeYSize, cb
       );
 
       // line joining
-      buildLine(s, `M${center},${recty}L${center},${recty - config.nodeYSpace}`);
+      buildLine(s, `M${center},${recty}L${center},${recty - config.nodeYSpace}`, config);
     } else {
       if (right - left > config.nodeXSize * 2 + config.nodeXSpace) {
         left = center - (config.nodeXSize + config.nodeXSpace / 2);
@@ -304,13 +274,13 @@ const placeParents = (node, siblings, row, mother, father, family, s) => {
 
       mother.x = left;
       mother.y = recty;
-      buildNode(s, mother, left, recty, config.nodeXSize, config.nodeYSize);
+      buildNode(s, mother, left, recty, config.nodeXSize, config.nodeYSize, cb);
 
       // line joining parents
       buildLine(s,
         `M${left + config.nodeXSize},${recty + config.nodeYSize / 2}L${right - config.nodeXSize},${
           recty + config.nodeYSize / 2
-        }`
+        }`, config
       );
 
       father.x = right - config.nodeXSize;
@@ -319,7 +289,7 @@ const placeParents = (node, siblings, row, mother, father, family, s) => {
         right - config.nodeXSize,
         recty,
         config.nodeXSize,
-        config.nodeYSize
+        config.nodeYSize, cb
       );
     }
 
@@ -346,13 +316,13 @@ const placeParents = (node, siblings, row, mother, father, family, s) => {
           motherMother,
           motherFather,
           family,
-          s
+          s, cb, config
         );
     }
   }
 };
 
-const placeChildren = (children, row, x, y, s) => {
+const placeChildren = (children, row, x, y, s, cb, config) => {
   let left = 99999999;
   let right = 0;
   let recty =
@@ -361,13 +331,13 @@ const placeChildren = (children, row, x, y, s) => {
     let rectx = x + chi * config.nodeXSize + config.nodeXSpace * chi;
     ch.x = rectx;
     ch.y = recty;
-    buildNode(s, ch, rectx, recty, config.nodeXSize, config.nodeYSize);
+    buildNode(s, ch, rectx, recty, config.nodeXSize, config.nodeYSize, cb);
 
     // line for each child
     buildLine(s, 
       `M${rectx + config.nodeXSize / 2},${recty + config.nodeYSize}L${
         rectx + config.nodeXSize / 2
-      },${recty + config.nodeYSize + config.nodeYSpace / 2 + config.strokeWidth / 2}`
+      },${recty + config.nodeYSize + config.nodeYSpace / 2 + config.strokeWidth / 2}`, config
     )
 
     left = Math.min(left, rectx);
@@ -380,7 +350,7 @@ const placeChildren = (children, row, x, y, s) => {
   buildLine(s,
     `M${center},${recty + config.nodeYSize + config.nodeYSpace / 2}L${center},${
       recty + config.nodeYSize + config.nodeYSpace + config.nodeYSize / 2
-    }`
+    }`, config
   );
 
   buildLine(s, 
@@ -388,7 +358,7 @@ const placeChildren = (children, row, x, y, s) => {
       recty + config.nodeYSize + config.nodeYSpace + config.nodeYSize / 2
     }L${center + config.nodeYSpace / 2},${
       recty + config.nodeYSize + config.nodeYSpace + config.nodeYSize / 2
-    }`
+    }`, config
   );
 
   // line joining siblings
@@ -397,7 +367,7 @@ const placeChildren = (children, row, x, y, s) => {
       recty + config.nodeYSize + config.nodeYSpace / 2
     }L${right - config.nodeXSize / 2 + config.strokeWidth / 2},${
       recty + config.nodeYSize + config.nodeYSpace / 2
-    }`
+    }`, config
   );
 };
 
