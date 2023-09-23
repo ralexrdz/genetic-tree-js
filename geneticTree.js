@@ -395,5 +395,3 @@ const sortGeneration = (nodes) => {
 
   return res;
 };
-
-module.exports = init

@@ -104,31 +104,8 @@ let family = [
   },
 ];
 
-init(
-  family,
-  (item) => {
-    return `
-  <div class="node">
-    <div class="node_header">
-      <button class="node_button">
-        <img class="node_buttonIcon">
-      </button>
-      <button class="node_button">
-        <img class="node_buttonIcon">
-      </button>
-    </div>
-    <div class="node_content">
-      <div class="node_userpic">
-        <img class="node_userpicFile">
-      </div>
-      <div class="node_titles">
-        <p class="title">${item.name}</p>
-        <p class="subtitle"></p>
-      </div>
-    </div>
-  </div>`;
-  },
-  {
+
+  const config = {
     placeholder: "#tree",
     nodeXSize: 330,
     nodeYSize: 130,
@@ -137,49 +114,34 @@ init(
     strokeWidth: 2,
     strokeColor: "#8796D0",
     lineClassName: "node",
+  };
+
+  var s = Snap(config.placeholder);
+  setTimeout(() => {
+    svgPanZoom(config.placeholder);
+  }, 2500);
+
+  init(s, family, (item) => {
+    return `
+      <div class="node">
+        <div class="node_header">
+          <button class="node_button">
+            <img class="node_buttonIcon">
+          </button>
+          <button class="node_button">
+            <img class="node_buttonIcon">
+          </button>
+        </div>
+        <div class="node_content">
+          <div class="node_userpic">
+            <img class="node_userpicFile">
+          </div>
+          <div class="node_titles">
+            <p class="title">${item.name}</p>
+            <p class="subtitle"></p>
+          </div>
+        </div>
+      </div>`;
   },
-);
-
-
-
-
-// var paper = Snap('#tree');
-
-//   console.log(paper)
-
-// Creates circle at x = 50, y = 40, with radius 10
-// paper.rect(50, 40, 200, 100, 10)
-//   .attr("stroke", "#E8EBF6")
-//   .attr("fill", "#E8EBF6")
-//   .click(() => console.log(4))
-// init(family)
-
-// var paper = Raphael(10, 50, 1000, 600);
-
-// // Creates circle at x = 50, y = 40, with radius 10
-// paper.rect(50, 40, 200, 100, 10)
-//   .attr("stroke", "#E8EBF6")
-//   .attr("fill", "#E8EBF6")
-//   .click(() => console.log(4))
-
-// let circle = paper.circle(90,90, 20)
-// .attr("stroke", "#576CBE")
-// .attr("stroke-width", "2px")
-// .attr({fill: 'url(https://filestore.community.support.microsoft.com/api/images/c12b37db-ce79-4aa6-9c4a-4c0fa3fe3969)'})
-
-// setTimeout(() => {
-//   svgPanZoom(document.getElementsByTagName('svg')[0], {
-//     zoomScaleSensitivity: 0.5
-//   })
-
-//   let patId = circle.node.getAttribute('fill').split('(')[1].split('#')[1].slice(0,-1)
-//   document.getElementById(patId).removeAttribute('patternTransform')
-//   document.getElementById(patId).removeAttribute('patternUnits')
-//   document.getElementById(patId).removeAttribute('y')
-//   document.getElementById(patId).removeAttribute('x')
-//   document.getElementById(patId).setAttribute('viewBox', '0 0 100 100')
-//   document.getElementById(patId).setAttribute('width', 1)
-//   document.getElementById(patId).setAttribute('height', 1)
-//   document.getElementById(patId).childNodes[0].setAttribute('width', 100)
-//   document.getElementById(patId).childNodes[0].setAttribute('height', 100)
-// }, 1000);
+    config
+  )
