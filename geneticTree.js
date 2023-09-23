@@ -1,13 +1,7 @@
-const init = (family, cb, config) => {
+const init = (s, family, cb, config) => {
   addGenerations(family);
 
-  // var s = Raphael(10, 50, 1000, 600);
-  var s = Snap(config.placeholder);
-  setTimeout(() => {
-    svgPanZoom(config.placeholder);
-  }, 2500);
-
-  nodesByGen = getNodesByGeneration(family);
+  const nodesByGen = getNodesByGeneration(family);
   placeNodes(nodesByGen, family, s, cb, config);
 };
 
@@ -40,7 +34,7 @@ const getChildren = (personIdArrm, family) => {
 };
 
 const increaseMyChildrenGen = (me, family) => {
-  children = family.filter((f) => f.fatherId == me.id || f.motherId == me.id);
+  const children = family.filter((f) => f.fatherId == me.id || f.motherId == me.id);
   children.forEach((c) => {
     c.gen = me.gen + 1;
     increaseMyChildrenGen(c, family);
@@ -98,7 +92,7 @@ const addGenerations = (family) => {
         });
       }
     }
-    siblings = family.filter((f) => {
+    const siblings = family.filter((f) => {
       if (f.id == current.id) return false;
       else
         return (
@@ -401,3 +395,5 @@ const sortGeneration = (nodes) => {
 
   return res;
 };
+
+module.exports = init
