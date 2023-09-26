@@ -1,23 +1,24 @@
-const init = (family) => {
-  addGenerations(family);
+const init = (family, s) => {
+  addExtraInfo(family);
 
   // var s = Raphael(10, 50, 1000, 600);
-  var s = Snap("#tree");
-  setTimeout(() => {
-    svgPanZoom("#tree");
-  }, 2500);
+  
+  
+  let nodesByGen = getNodesByGeneration(family);
 
-  nodesByGen = getNodesByGeneration(family);
-
+  
   placeNodes(nodesByGen, family, s);
 };
 
+// const delay = ms => new Promise(res => setTimeout(res, ms));
+
 const buildLine = (s, f) => {
-  s.path(f).attr({stroke: config.strokeColor, strokeWidth: config.strokeWidth}).addClass(config.className);
+  return s.path(f).attr({stroke: config.strokeColor, strokeWidth: config.strokeWidth}).addClass(config.className);
 }
 
 const buildNode = (s, n, x, y, w, h) => {
-  let group = s.group()
+  
+  let group = s.group()  
 
   let foreignObject = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject')
   foreignObject.setAttribute('width', w)
@@ -25,19 +26,19 @@ const buildNode = (s, n, x, y, w, h) => {
   foreignObject.setAttribute('x', x)
   foreignObject.setAttribute('y', y)
       
+  // let x = <div class="node_header">
+    //     <button class="node_button">
+    //     <img class="node_buttonIcon">
+    //   </button>
+    //   <button class="node_button">
+    //     <img class="node_buttonIcon" >
+    //   </button>
+    // </div>
   foreignObject.innerHTML = `
-    <div class="node">
-      <div class="node_header">
-        <button class="node_button">
-          <img class="node_buttonIcon">
-        </button>
-        <button class="node_button">
-          <img class="node_buttonIcon">
-        </button>
-      </div>
+    <div class="node ${n.me ? 'me': ''}">
       <div class="node_content">
         <div class="node_userpic">
-          <img class="node_userpicFile">
+          <img class="node_userpicFile" src="${n.picture ? n.picture.url : 'https://toppng.com/public/uploads/preview/user-account-management-logo-user-icon-11562867145a56rus2zwu.png'}">
         </div>
         <div class="node_titles">
           <p class="title">${n.name}</p>
@@ -48,6 +49,11 @@ const buildNode = (s, n, x, y, w, h) => {
   `
 
   group.append(foreignObject)
+
+  if (n.motherId || n.fatherId) {
+    let childConnector = buildLine(s,`M${x + (config.nodeXSize / 2)},${y + config.nodeYSize}L${x + (config.nodeXSize / 2)},${y + config.nodeYSize + (config.nodeYSpace / 2)}`)
+    group.append(childConnector)
+  }
 
 }
 
@@ -61,25 +67,26 @@ const config = {
   className: "node",
 };
 
-const getChildren = (personIdArrm, family) => {
-  // gets All the children of an a array of persons ids
-  return family.filter(
-    (mm) =>
-      personIdArrm.includes(mm.motherId) || personIdArrm.includes(mm.fatherId)
-  );
-};
+
 
 const increaseMyChildrenGen = (me, family) => {
-  children = family.filter((f) => f.fatherId == me.id || f.motherId == me.id);
+  let children = family.filter((f) => {
+    return (f.fatherId && f.fatherId == me.id) || (f.motherId && f.motherId == me.id)
+  });
+  
   children.forEach((c) => {
     c.gen = me.gen + 1;
     increaseMyChildrenGen(c, family);
   });
 };
 
-const addGenerations = (family) => {
-  let withoutAncestors = family.filter((f) => !f.fatherId && !f.motherId);
+// includes generation calculation, if it has siblings and children
+const addExtraInfo = (family) => {
+  let withoutAncestors = family.filter((f) =>{
+    return !f.fatherId && !f.motherId
+  });
   withoutAncestors.forEach((wa) => {
+    
     wa.gen = 1;
     increaseMyChildrenGen(wa, family);
   });
@@ -90,13 +97,22 @@ const addGenerations = (family) => {
     let change = false;
     current = family[index];
     let children = family.filter(
-      (f) => f.fatherId == current.id || f.motherId == current.id
+      (f) => (f.fatherId  && f.fatherId == current.id) || (f.motherId && f.motherId == current.id)
     );
 
+    
     if (children.length) {
+      current.children = children.map(c => c.id)
+      if (children.some(c => c.gender == 'female')) {
+        current.hasDoughters = true
+      } else {
+        current.hasSons = true
+      }
+      
       let childrenGen = children.reduce((max, c) => {
         return Math.max(max, c.gen);
       }, 0);
+      
 
       if (childrenGen - current.gen > 1) {
         current.gen++;
@@ -114,9 +130,11 @@ const addGenerations = (family) => {
       }, []);
 
       if (partnersIds.length) {
-        current.partner = partnersIds;
+        
+        current.partner = partnersIds[0];
         partnersIds.forEach((p) => {
           let partner = family.find((f) => f.id == p);
+          
           if (partner.gen > current.gen) {
             current.gen = partner.gen;
             change = true;
@@ -126,9 +144,27 @@ const addGenerations = (family) => {
             change = true;
           }
         });
+        if (current.fatherId) {
+          let father = family.find(m => m.id == current.fatherId)
+          if (current.gender == 'female') {
+            father.hasMarriedDoughters = true
+          }
+          else {
+            father.hasMarriedSons = true
+          }
+        }
+        if (current.motherId) {
+          let mother = family.find(m => m.id == current.motherId)
+          if (current.gender == 'female') {
+            mother.hasMarriedDoughters = true
+          }
+          else {
+            mother.hasMarriedSons = true
+          }
+        }
       }
     }
-    siblings = family.filter((f) => {
+    let siblings = family.filter((f) => {
       if (f.id == current.id) return false;
       else
         return (
@@ -160,6 +196,7 @@ const addGenerations = (family) => {
   // return family
 };
 
+// divides nodes array by generation
 const getNodesByGeneration = (family) => {
   let nodesByGen = family.reduce((nodes, m) => {
     if (!nodes[m.gen]) {
@@ -173,28 +210,40 @@ const getNodesByGeneration = (family) => {
   Object.keys(nodesByGen).forEach((ng) => {
     nodesByGen[ng].count = nodesByGen[ng].nodes.length;
     nodesByGen[ng].nodes = nodesByGen[ng].nodes.sort((a, b) => {
-      return (a.fatherId || 0) - (b.fatherId || 0);
+      let res = (a.fatherId || "").localeCompare(b.fatherId || "")
+      if (res == 0) {
+        res = (b.gender || '').localeCompare(a.gender || '')
+      }
+      return res
     });
   });
 
   return nodesByGen;
 };
 
-const placeNodes = (nodesByGen, family, s) => {
+const placeNodes = async (nodesByGen, family, s) => {
+
+  let longGenNum
   let longestGeneration = Object.keys(nodesByGen).reduce((longest, gen) => {
     if (!longest) return nodesByGen[gen];
     else {
-      return longest.count < nodesByGen[gen].count ? nodesByGen[gen] : longest;
+      if (longest.count < nodesByGen[gen].count) {
+        longGenNum = gen
+        return nodesByGen[gen] 
+      } else return longest
     }
   }, null);
 
+  
+  
   // Object.keys(nodesByGen).sort().reverse().forEach((g, i) => {
 
-  let sortedGenNodes = sortGeneration(longestGeneration.nodes);
+  let sortedLongestGen = sortLongestGeneration(longestGeneration.nodes);
+  
+  let row = Object.keys(nodesByGen).length + 1 - sortedLongestGen[0].gen;
 
-  let row = Object.keys(nodesByGen).length + 1 - sortedGenNodes[0].gen;
-
-  sortedGenNodes.forEach((n, i) => {
+  sortedLongestGen.forEach((n,i) => {
+    
     let rectx = i * config.nodeXSize + config.nodeXSpace * i;
     let recty = row * config.nodeYSize + config.nodeXSpace * row;
     n.x = rectx;
@@ -202,232 +251,287 @@ const placeNodes = (nodesByGen, family, s) => {
     
     buildNode(s, n, rectx, recty, config.nodeXSize, config.nodeYSize);
 
-    if (n.motherId || n.fatherId) {
-      // line for each child
-      buildLine(s, 
-        `M${rectx + config.nodeXSize / 2},${recty + config.nodeYSize}L${
-          rectx + config.nodeXSize / 2
-        },${recty + config.nodeYSize + config.nodeYSpace / 2 + config.strokeWidth / 2}`
-      );
-    }
+  })
 
-    let children = nodesByGen[n.gen + 1]
-      ? nodesByGen[n.gen + 1].nodes.filter(
-          (c) => c.fatherId == n.id || c.motherId == n.id
-        )
-      : [];
+  drawSiblingsConnectors(s, sortedLongestGen)
 
-    if (children.length && n.gender == "F") {
-      let childrenx =
-        n.x +
-        (config.nodeXSize + config.nodeXSpace) -
-        (children.length * (config.nodeXSize + config.nodeXSpace)) / 2;
-      let childreny = n.y - (config.nodeYSize + config.nodeYSpace);
-      placeChildren(children, row - 2, childrenx, childreny, s);
-    }
+  drawPartnersConnectors(s, sortedLongestGen)
 
-    let father, mother;
-    if (n.fatherId)
-      father = nodesByGen[n.gen - 1].nodes.find((f) => f.id == n.fatherId);
-    if (n.motherId)
-      mother = nodesByGen[n.gen - 1].nodes.find((m) => m.id == n.motherId);
+  drawSingleParentConnectors(s, sortedLongestGen)
 
-    if (mother || father) {
-      let siblings = nodesByGen[n.gen].nodes.filter((s) =>
-        n.siblings.includes(s.id)
-      );
-      placeParents(n, siblings, row - 1, mother, father, family, s);
-    }
-  });
+  Object.keys(nodesByGen)
+    .filter(g => g != longGenNum)
+    .sort((a, b) => {
+      return Math.abs(a - longGenNum)-Math.abs(b - longGenNum)
+    })
+    .forEach((gen) => {
+      let hasParents = doesSomeNodesInGenHasParents(nodesByGen[gen].nodes) 
+      if (!hasParents) {
+        let childrenHaveLocations = everyoneHasLocations(nodesByGen[parseInt(gen)+1].nodes)
+        if (childrenHaveLocations) {
+          let childrenByParents = groupByParents(nodesByGen[parseInt(gen)+1].nodes)
+          Object.keys(childrenByParents).filter(parentIds => parentIds != 'undefined-undefined').forEach(pId => {
+            
+            placeParentsUnderChildren(s, childrenByParents[pId], nodesByGen[gen].nodes.filter(n => pId.split('-').filter(p => p != 'undefined').includes(n.id) ) );
 
-  // })
-};
-
-const placeParents = (node, siblings, row, mother, father, family, s) => {
-  let left = siblings.length
-    ? siblings.reduce((min, s) => {
-        return Math.min(min, s.x, node.x);
-      }, 9999999)
-    : node.x;
-  let right =
-    (siblings.length
-      ? siblings.reduce((max, s) => {
-          return Math.max(max, s.x, node.x);
-        }, 0)
-      : node.x) + config.nodeXSize;
-
-  if (!isNaN(left) && !isNaN(right)) {
-    let center = (left + right) / 2;
-    let recty = node.y + row * config.nodeYSize + row * config.nodeYSpace;
-
-    // lines joining siblings
-    buildLine(s,
-      `M${left + config.nodeXSize / 2 - config.strokeWidth / 2},${recty - config.nodeYSpace / 2}L${
-        right - config.nodeXSize / 2 + config.strokeWidth / 2
-      },${recty - config.nodeYSpace / 2}`
-    );
-    buildLine(s, 
-      `M${center},${recty - config.nodeYSpace / 2 - config.strokeWidth / 2}L${center},${
-        recty + config.nodeYSize / 2 + config.strokeWidth / 2
-      }`
-    );
-
-    if (mother && !father) {
-      mother.x = center - config.nodeXSize / 2;
-      mother.y = recty;
-      buildNode(s, mother,
-        center - config.nodeXSize / 2,
-        recty,
-        config.nodeXSize,
-        config.nodeYSize
-      );
-
-      // line joining
-      buildLine(s, `M${center},${recty}L${center},${recty - config.nodeYSpace}`);
-    } else if (father && !mother) {
-      father.x = center - config.nodeXSize / 2;
-      father.y = recty;
-      buildNode(s, father,
-        center - config.nodeXSize / 2,
-        recty,
-        config.nodeXSize,
-        config.nodeYSize
-      );
-
-      // line joining
-      buildLine(s, `M${center},${recty}L${center},${recty - config.nodeYSpace}`);
-    } else {
-      if (right - left > config.nodeXSize * 2 + config.nodeXSpace) {
-        left = center - (config.nodeXSize + config.nodeXSpace / 2);
-        right = center + (config.nodeXSize + config.nodeXSpace / 2);
+          })
+        }
+      } else {
+        let parentsHaveLocations = everyoneHasLocations(nodesByGen[parseInt(gen)-1].nodes)
+        if (parentsHaveLocations) {
+          let childrenByParents2 = groupByParents(nodesByGen[gen].nodes)
+          Object.keys(childrenByParents2).filter(parentIds => parentIds != 'undefined-undefined').forEach(pId => {
+            
+            placeChildrenAboveParents(s, childrenByParents2[pId], nodesByGen[gen-1].nodes.filter(n => pId.split('-').filter(p => p != 'undefined').includes(n.id) ) );
+            drawPartnersConnectors(s, nodesByGen[gen].nodes.filter(n => n.partner))
+          })
+        }
+        
       }
 
-      mother.x = left;
-      mother.y = recty;
-      buildNode(s, mother, left, recty, config.nodeXSize, config.nodeYSize);
+    })
 
-      // line joining parents
-      buildLine(s,
-        `M${left + config.nodeXSize},${recty + config.nodeYSize / 2}L${right - config.nodeXSize},${
-          recty + config.nodeYSize / 2
-        }`
-      );
-
-      father.x = right - config.nodeXSize;
-      father.y = recty;
-      buildNode(s, father,
-        right - config.nodeXSize,
-        recty,
-        config.nodeXSize,
-        config.nodeYSize
-      );
-    }
-
-    if (mother) {
-      console.log("mother", mother);
-      let motherSiblings = mother.siblings
-        ? family.filter((m) => mother.siblings.includes(m.id))
-        : [];
-      let motherMother = family.find(
-        (m) => mother.motherId && mother.motherId == m.id
-      );
-      let motherFather = family.find(
-        (m) => mother.fatherId && mother.fatherId == m.id
-      );
-      console.log("motherSiblings", motherSiblings);
-      console.log("motherMother", motherMother);
-      console.log("motherFather", motherFather);
-
-      if (motherMother || motherFather)
-        placeParents(
-          mother,
-          motherSiblings,
-          row,
-          motherMother,
-          motherFather,
-          family,
-          s
-        );
-    }
+};
+const placeChildrenAboveParents = (s, children, parents) => {
+  parents.sort((a,b) => a.gender.localeCompare(b.gender))
+  let xcenter 
+  if (parents.length == 1) {
+    xcenter = parents[0].x + (config.nodeXSize / 2)
+  } else {
+    xcenter = (parents[1].x + (parents[0].x + config.nodeXSize) ) / 2
   }
-};
+  let totalChildrenWidth = (children.length * config.nodeXSize) + ((children.length - 1) * config.nodeXSpace )
+  
+  children.sort(sortSiblingsFunction)
+  
+  let y = parents[0].y - config.nodeYSize - config.nodeYSpace
+  children.forEach((c, i) => {
+    
+    c.x = xcenter - (totalChildrenWidth / 2) + (i * (config.nodeXSize + config.nodeXSpace))
+    c.y = y
+    buildNode(s, c, c.x, c.y, config.nodeXSize, config.nodeYSize)
+  })
+  if (children.length > 1) {
+    buildLine(s, `M${xcenter - (totalChildrenWidth / 2) + (config.nodeXSize / 2)},${y + config.nodeYSize + (config.nodeYSpace / 2)}L${xcenter + (totalChildrenWidth / 2) - (config.nodeXSize / 2)},${y + config.nodeYSize + (config.nodeYSpace / 2)}`)
+  }
 
-const placeChildren = (children, row, x, y, s) => {
-  let left = 99999999;
-  let right = 0;
-  let recty =
-    y + row * (config.nodeYSize + config.nodeYSpace) + row * config.nodeYSpace;
-  children.forEach((ch, chi) => {
-    let rectx = x + chi * config.nodeXSize + config.nodeXSpace * chi;
-    ch.x = rectx;
-    ch.y = recty;
-    buildNode(s, ch, rectx, recty, config.nodeXSize, config.nodeYSize);
+}
 
-    // line for each child
-    buildLine(s, 
-      `M${rectx + config.nodeXSize / 2},${recty + config.nodeYSize}L${
-        rectx + config.nodeXSize / 2
-      },${recty + config.nodeYSize + config.nodeYSpace / 2 + config.strokeWidth / 2}`
-    )
+const placeParentsUnderChildren = (s, children, parents) => {
+  let xmin = children.reduce((min, n) => {
+    return Math.min(min, n.x)
+  }, 999999)
+  let xmax = children.reduce((max, n) => {
+    return Math.max(max, n.x)
+  }, 0)
+  let y = children[0].y + config.nodeYSpace + config.nodeYSize
+  let x = (xmin+xmax) / 2
+  if (parents.length == 1) {
+    // single parent
+    parents[0].x = x
+    parents[0].y = y
+    buildNode(s, parents[0], x, y, config.nodeXSize, config.nodeYSize)
+    buildLine(s, `M${(x) + (config.nodeXSize/2)},${y}L${(x) + (config.nodeXSize/2)},${y - (config.nodeYSpace / 2)}`)
+  } else {
+    // both parents
+    let x0 = x - ((config.nodeXSize / 2) + (config.nodeXSpace / 2))
+    let x1 = x + (config.nodeXSize / 2) + (config.nodeXSpace / 2)
+    parents.sort((a,b) => a.gender.localeCompare(b.gender))
+    parents[0].x = x0
+    parents[0].y = y
+    buildNode(s, parents[0], x0, y, config.nodeXSize, config.nodeYSize)
+    buildNode(s, parents[1], x1 , y, config.nodeXSize, config.nodeYSize)
+    buildLine(s, `M${(x) + (config.nodeXSize / 2)},${y - (config.nodeYSpace / 2)}L${(x) + (config.nodeXSize / 2)},${y + (config.nodeYSize / 2)}`)
+    buildLine(s, `M${x0 + config.nodeXSize},${y + (config.nodeYSize / 2)}L${x1},${y + (config.nodeYSize / 2)}`)
 
-    left = Math.min(left, rectx);
-    right = Math.max(right, rectx + config.nodeXSize);
-  });
+  }
+}
 
-  let center = (right + left) / 2;
+const everyoneHasLocations = gen => {
+  return gen.every((m) => m.x != undefined && m.y != undefined)
+}
 
-  // lines joining parents
-  buildLine(s,
-    `M${center},${recty + config.nodeYSize + config.nodeYSpace / 2}L${center},${
-      recty + config.nodeYSize + config.nodeYSpace + config.nodeYSize / 2
-    }`
-  );
+const doesSomeNodesInGenHasParents = gen => {
+  return gen.some(n => n.fatherId || n.motherId)
+}
 
-  buildLine(s, 
-    `M${center - config.nodeXSpace / 2},${
-      recty + config.nodeYSize + config.nodeYSpace + config.nodeYSize / 2
-    }L${center + config.nodeYSpace / 2},${
-      recty + config.nodeYSize + config.nodeYSpace + config.nodeYSize / 2
-    }`
-  );
+const groupByParents = (nodes) => {
 
-  // line joining siblings
-  buildLine(s, 
-    `M${left + config.nodeXSize / 2 - config.strokeWidth / 2},${
-      recty + config.nodeYSize + config.nodeYSpace / 2
-    }L${right - config.nodeXSize / 2 + config.strokeWidth / 2},${
-      recty + config.nodeYSize + config.nodeYSpace / 2
-    }`
-  );
-};
-
-const sortGeneration = (nodes) => {
-  let nodesByfatherIds = {};
+  let nodesByParentsIds = {};
   nodes.forEach((n) => {
-    if (nodesByfatherIds[n.fatherId]) nodesByfatherIds[n.fatherId].push(n);
-    else nodesByfatherIds[n.fatherId] = [n];
+    if (nodesByParentsIds[n.fatherId+'-'+n.motherId]) nodesByParentsIds[n.fatherId+'-'+n.motherId].push(n);
+    else nodesByParentsIds[n.fatherId+'-'+n.motherId] = [n];
   }, {});
 
-  let res = [];
+  return nodesByParentsIds
+}
 
-  Object.keys(nodesByfatherIds).forEach((fId) => {
-    res = [
-      ...res,
-      ...nodesByfatherIds[fId].sort((a, b) => {
-        // return a.gender.localeCompare(b.gender)
-        if (a.gender != b.gender) {
-          return b.gender.localeCompare(a.gender);
-        } else {
-          if (b.children && a.children) {
-            b.children.length - a.children.length;
-          } else {
-            if (b.children && !a.children) return a.gender == "M" ? 1 : -1;
-            else return a.gender == "M" ? -1 : 1;
+const drawSingleParentConnectors = (s, nodes ) => {
+  let singleParents = nodes.filter(n => n.children && !n.partner)
+  singleParents.forEach(sp => {
+    buildLine(s, `M${sp.x + (config.nodeXSize / 2)},${sp.y}L${sp.x + (config.nodeXSize / 2)},${sp.y - (config.nodeYSpace / 2)}`)
+  })
+  
+}
+
+const drawSiblingsConnectors = (s, nodes) => {
+
+  let nodesByParentsIds = groupByParents(nodes)
+
+  Object.keys(nodesByParentsIds).filter(parentIds => parentIds != 'undefined-undefined').forEach((pId) => {
+    let xmin = nodesByParentsIds[pId].reduce((min, n) => {
+      return Math.min(min, n.x)
+    }, 999999)
+    let xmax = nodesByParentsIds[pId].reduce((max, n) => {
+      return Math.max(max, n.x)
+    }, 0)
+    if (xmin != xmax) {
+      let y = nodesByParentsIds[pId][0].y
+      buildLine(s, `M${xmin + (config.nodeXSize / 2)},${y + config.nodeYSize + (config.nodeYSpace / 2)}L${xmax + (config.nodeXSize / 2)},${y + config.nodeYSize + (config.nodeYSpace / 2)}`)
+    }
+    
+  });
+  
+}
+
+const drawPartnersConnectors = (s, nodes) => {
+
+  let i = 0
+  while(i < nodes.length) {
+    let n = nodes[i]
+    if (n.partner) {
+      let partner = nodes.find(n2 => n2.id == n.partner)
+      let distance = partner.x - (n.x + config.nodeXSize)
+      buildLine(s, `M${n.x + config.nodeXSize},${n.y + (config.nodeYSize / 2)}L${n.x + config.nodeXSize + distance},${n.y + (config.nodeYSize / 2)}`)
+      buildLine(s, `M${n.x + config.nodeXSize + (distance / 2)},${n.y + (config.nodeYSize / 2)}L${n.x + config.nodeXSize + (distance / 2)},${n.y - (config.nodeYSpace / 2)}`)
+      i = i+2
+
+    } else i++
+  }
+
+}
+
+// arrage members of a generation to easily place its children and parents
+const sortLongestGeneration = (nodes) => {
+
+  let sortedNodes = []
+
+  // place members who was married doughters first with partner next to and siblings on the left
+  nodes.filter(n => n.hasMarriedDoughters).forEach(n => {
+    
+    if (!sortedNodes.map(sn => sn.id).includes(n.id)) {
+      if (n.partner) {
+        if (!sortedNodes.map(sn => sn.id).includes(n.partner)) {
+          let partner = nodes.find(n2 => n.partner == n2.id)
+          // partner next to member with married douhters
+          sortedNodes.push(n.gender == 'female'? n : partner)
+          sortedNodes.push(n.gender == 'female'? partner : n)
+          if (partner.siblings && partner.siblings.length) {
+            nodes.filter(n3 => partner.siblings.includes(n3.id)).forEach(n3 => {
+              if (!sortedNodes.map(sn => sn.id).includes(partner.id)) {
+                // partner siblings on the right
+                sortedNodes.push(n3)
+              }
+            })
           }
         }
-      }),
-    ];
-  });
+      } 
+      if (n.siblings && n.siblings.length) {
+        let siblings = nodes.filter(n4 => n.siblings.includes(n4.id))
 
-  return res;
+        siblings
+          .sort((a,b) => a.gender.localeCompare(b.gender))
+          .forEach(ss => {
+            if (!sortedNodes.map(sn => sn.id).includes(n.id)) {
+              // siblings of memeber with married doughter on the right
+              if (n.gender == 'female') sortedNodes.splice(sortedNodes.length -1 , 0, ss)
+              else sortedNodes.push(ss)
+            }
+          })
+      } else {
+        if (!sortedNodes.map(sn => sn.id).includes(n.id)) {
+          sortedNodes.push(n)
+        }
+      }
+    }
+  })
+
+  nodes.filter(n => n.hasMarriedSons).forEach(n => {
+    if (!sortedNodes.map(sn => sn.id).includes(n.id)) {
+      if (n.partner) {
+        if (!sortedNodes.map(sn => sn.id).includes(n.partner)) {
+          let partner = nodes.find(n2 => n.partner == n2.id)
+          // partner next to member with married douhters
+          sortedNodes.push(n.gender == 'female'? n : partner)
+          sortedNodes.push(n.gender == 'female'? partner : n)
+          if (partner.siblings && partner.siblings.length) {
+            nodes.filter(n3 => partner.siblings.includes(n3.id)).forEach(n3 => {
+              if (!sortedNodes.map(sn => sn.id).includes(partner.id)) {
+                // partner siblings on the right
+                sortedNodes.push(n3)
+              }
+            })
+          }
+        }
+      } 
+      if (n.siblings && n.siblings.length) {
+        let siblings = nodes.filter(n4 => n.siblings.includes(n4.id))
+
+        siblings
+          .sort((a,b) => a.gender.localeCompare(b.gender))
+          .forEach(ss => {
+            if (!sortedNodes.map(sn => sn.id).includes(n.id)) {
+              // siblings of memeber with married doughter on the right
+              if (n.gender == 'female') sortedNodes.splice(sortedNodes.length -1 , 0, ss)
+              else sortedNodes.push(ss)
+            }
+          })
+      }
+    }
+  })
+
+  nodes
+    .filter(n => !sortedNodes.map(sn => sn.id).includes(n.id))
+    .forEach(n => {
+      
+      if (!sortedNodes.map(sn => sn.id).includes(n.id)) {
+      // partner next to member with married doughters
+        if (n.siblings && n.siblings.length) {
+
+          let siblings = nodes.filter(n2 => n.siblings.includes(n2.id))
+          siblings.push(n)
+          
+          siblings
+            .sort(sortSiblingsFunction)
+            .forEach(n2 => {
+              if (!sortedNodes.map(sn => sn.id).includes(n2.id)) {
+                sortedNodes.push(n2)
+              }
+            })
+
+        } else {
+          sortedNodes.push(n)
+        }
+      }
+  })
+
+  return sortedNodes
 };
+
+const sortSiblingsFunction = (a,b) => {
+  let res
+  if (a.gender != b.gender) {
+    res = b.gender.localeCompare(a.gender)
+  } else {
+    if (a.children && b.children) {
+      res =  a.gender == 'female' ? (a.children.length - b.children.length) : (b.children.length - a.children.length)
+    } else if (a.children) {
+      res =  a.gender == 'female' ? 1 : -1
+    } else {
+      res =  a.gender == 'female' ? -1 : 1
+    }
+  }
+  return res
+}
+
+// module.exports = init

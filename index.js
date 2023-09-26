@@ -1,111 +1,135 @@
 
 let family = [
   {
-    id: 1,
+    id: '1',
     name: 'Mukti',
-    gender: 'F',
-    motherId: 2,
-    fatherId: 3,
+    gender: 'female',
+    motherId: '2',
+    fatherId: '3',
   },
+  // {
+  //   id: '0',
+  //   name: 'Mukti2',
+  //   gender: 'female',
+  //   motherId: '2',
+  //   fatherId: '3',
+  // },
+  // {
+  //   id: '-1',
+  //   name: 'Mukti3',
+  //   gender: 'female',
+  //   motherId: '2',
+  //   fatherId: '3',
+  // },
   {
-    id: 0,
-    name: 'Mukti2',
-    gender: 'F',
-    motherId: 2,
-    fatherId: 3,
-  },
-  {
-    id: -1,
-    name: 'Mukti3',
-    gender: 'F',
-    motherId: 2,
-    fatherId: 3,
-  },
-  {
-    id: 2,
+    id: '2',
     name: 'Yori',
-    gender: 'F',
-    motherId: 4,
-    fatherId: 5,
+    gender: 'female',
+    motherId: '4',
+    fatherId: '5',
   },
   {
-    id: 3,
+    id: '3',
     name: 'Ralex',
-    gender: 'M',
-    motherId: 6,
-    fatherId: 7,
+    gender: 'male',
+    motherId: '6',
+    fatherId: '7',
   },
   {
-    id: 4,
+    id: '4',
     name: 'Mari',
-    gender: 'F',
+    gender: 'female',
   },
   {
-    id: 5,
+    id: '5',
     name: 'Dante',
-    gender: 'M',
+    gender: 'male',
   },
   {
-    id: 6,
+    id: '6',
     name: 'Lidia',
-    gender: 'F',
-    motherId: 14
+    gender: 'female',
+    motherId: '14'
   },
   {
-    id: 7,
+    id: '7',
     name: 'Rauli',
-    gender: 'M',
+    gender: 'male',
+    motherId: '15',
+    fatherId: '17'
   },
   {
-    id: 8,
+    id: '8',
     name: 'Maridan',
-    gender: 'F',
-    motherId: 4,
-    fatherId: 5,
+    gender: 'female',
+    motherId: '4',
+    fatherId: '5',
   },
   {
-    id: 9,
+    id: '9',
     name: 'Rich',
-    gender: 'M',
-    motherId: 6,
-    fatherId: 7,
+    gender: 'male',
+    motherId: '6',
+    fatherId: '7',
   },
+  // {
+  //   id: '10',
+  //   name: 'Dan',
+  //   gender: 'male',
+  //   motherId: '4',
+  //   fatherId: '5',
+  // },
+  // {
+  //   id: '11',
+  //   name: 'Fana',
+  //   gender: 'female',
+  //   motherId: '6',
+  //   fatherId: '7',
+  // },
+  // {
+  //   id: '12',
+  //   name: 'Salomón',
+  //   gender: 'male',
+  //   motherId: '4',
+  //   fatherId: '5',
+  // },
+  // {
+  //   id: '13',
+  //   name: 'Mich',
+  //   gender: 'female',
+  //   motherId: '6',
+  //   fatherId: '7',
+  // },
   {
-    id: 10,
-    name: 'Dan',
-    gender: 'M',
-    motherId: 4,
-    fatherId: 5,
-  },
-  {
-    id: 11,
-    name: 'Fana',
-    gender: 'F',
-    motherId: 6,
-    fatherId: 7,
-  },
-  {
-    id: 12,
-    name: 'Salomón',
-    gender: 'M',
-    motherId: 4,
-    fatherId: 5,
-  },
-  {
-    id: 13,
-    name: 'Mich',
-    gender: 'F',
-    motherId: 6,
-    fatherId: 7,
-  },
-  {
-    id: 14,
+    id: '14',
     name: 'Coty',
-    gender: 'F',
-  }
+    gender: 'female',
+  },
+  {
+    id: '15',
+    name: 'Lupita',
+    gender: 'female',
+  },
+  {
+    id: '17',
+    name: 'Gumaro',
+    gender: 'male',
+  },
+  {
+    id: '16',
+    name: 'Rafa',
+    gender: 'male',
+    motherId: '15',
+    fatherId: '17'
+  },
 ]
+var s = Snap('#tree');
 
-init(family);
+init(family, s);
+
+setTimeout(() => {
+  svgPanZoom('#tree')
+}, 1500);
   
 
 // var paper = Snap('#tree');
